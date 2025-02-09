@@ -1,0 +1,8 @@
+{
+  "name": "Vents Breeze HRU Fans",
+  "content_in_root": false,
+  "domains": ["fan"],  
+  "homeassistant": "2025.1.0",
+  "iot_class": "local_poll",
+  "render_readme": true
+}
