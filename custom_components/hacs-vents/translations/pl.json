@@ -1,0 +1,23 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Urządzenie jest już skonfigurowane"
+        },
+        "error": {
+            "cannot_connect": "Nie udało się połączyć",
+            "invalid_auth": "Nieprawidłowe dane logowania",
+            "unknown": "Niespodziewany błąd"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "ip_address": "Host",
+                    "password": "Hasło",
+                    "port": "Port",
+                    "device_id": "ID",
+                    "name": "Nazwa"
+                }
+            }
+        }
+    }
+}
