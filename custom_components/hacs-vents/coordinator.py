@@ -4,7 +4,7 @@
 from datetime import timedelta
 import logging
 
-from vents-breezy import Fan
+from vents_breezy import Fan
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (

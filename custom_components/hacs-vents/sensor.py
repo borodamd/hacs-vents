@@ -1,7 +1,7 @@
 """EcoVentV2 platform sensors."""
 from __future__ import annotations
 
-from vents-breezy import Fan
+from vents_breezy import Fan
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,

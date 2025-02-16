@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from vents-breezy import Fan
+from vents_breezy import Fan
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
