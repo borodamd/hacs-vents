@@ -31,9 +31,9 @@ async def async_setup_entry(
     async_add_entities(
         [
             VentoBinarySensor(
-                hass, config, "_boost_status", "boost_status", False, None
+                hass, config, "_boost_status", "boost_status", True, None
             ),
-            VentoBinarySensor(hass, config, "_timer_mode", "timer_mode", False, None),
+            VentoBinarySensor(hass, config, "_timer_mode", "timer_mode", True, None),
             VentoBinarySensor(
                 hass, config, "_relay_status", "relay_status", False, None
             ),
@@ -49,11 +49,14 @@ async def async_setup_entry(
                 hass, config, "_alarm_status", "alarm_status", True, None
             ),
             VentoBinarySensor(
+                hass, config, "_heater_status", "Heater_status", True, None
+            ),
+            VentoBinarySensor(
                 hass,
                 config,
                 "_cloud_server_state",
                 "cloud_server_state",
-                False,
+                True,
                 None,
             ),
             VentoBinarySensor(
@@ -125,6 +128,11 @@ class VentoBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def relay_status(self) -> bool:
         """Relay status."""
         return self._fan.relay_status
+
+    def heater_status(self) -> bool:
+        """Heater status."""
+        return self._fan.heater_status
+
 
     def alarm_status(self) -> bool:
         """Alarm status."""
