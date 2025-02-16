@@ -6,6 +6,6 @@
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/ecovent_v2",
   "iot_class": "local_polling",
-  "loggers": ["vents-breezy"],
+  "loggers": ["Vents-Breezy"],
   "requirements": ["vents-breezy==0.0.2"]
 }
