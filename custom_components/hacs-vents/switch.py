@@ -1,7 +1,7 @@
 """Switches on Fan device."""
 from __future__ import annotations
 
-from vents_breezy import Fan
+from vents-breezy import Fan
 
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.config_entries import ConfigEntry

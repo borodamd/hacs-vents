@@ -1,4 +1,4 @@
-"""The Vents Breeze integration."""
+"""The EcoVent_v2 integration."""
 # from __future__ import annotations
 import logging
 
