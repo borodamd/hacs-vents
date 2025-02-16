@@ -49,7 +49,7 @@ async def async_setup_entry(
                 hass, config, "_alarm_status", "alarm_status", True, None
             ),
             VentoBinarySensor(
-                hass, config, "_heater_status", "Heater_status", True, None
+                hass, config, "_heater_status", "heater_status", True, None
             ),
             VentoBinarySensor(
                 hass,
@@ -132,7 +132,6 @@ class VentoBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def heater_status(self) -> bool:
         """Heater status."""
         return self._fan.heater_status
-
 
     def alarm_status(self) -> bool:
         """Alarm status."""
