@@ -1,11 +1,11 @@
 {
-  "domain": "ecovent_v2",
-  "name": "Vento Eco Vent v 2.0",
-  "codeowners": ["@gody01"],
-  "version": "1.0.6",
+  "domain": "hacs_vents",
+  "name": "Vents Breezy HRU",
+  "codeowners": ["@borodamd"],
+  "version": "0.0.2",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/ecovent_v2",
   "iot_class": "local_polling",
-  "loggers": ["pyEcoventV2"],
-  "requirements": ["pyecoventv2==0.9.21"]
+  "loggers": ["vents_breezy"],
+  "requirements": ["vents_breezy"]
 }

@@ -3,7 +3,7 @@ filter_timer_reset:
   description: Reset the Vento Air Filter Timer.
   target:
     entity:
-      integration: ecovent_v2
+      integration: hacs_vents
       domain: fan
 
 reset_alarms:
@@ -11,5 +11,5 @@ reset_alarms:
   description: Reset Vento alarms.
   target:
     entity:
-      integration: ecovent_v2
+      integration: hacs_vents
       domain: fan
