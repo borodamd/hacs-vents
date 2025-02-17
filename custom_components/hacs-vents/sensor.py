@@ -28,18 +28,18 @@ async def async_setup_entry(
     """Set up Vento Sensors."""
     async_add_entities(
         [
-            VentoSensor(
-                hass,
-                config,
-                "_humidity",
-                "humidity",
-                PERCENTAGE,
-                SensorDeviceClass.HUMIDITY,
-                SensorStateClass.MEASUREMENT,
-                None,
-                True,
-                "mdi:water-percent",
-            ),
+#            VentoSensor(
+#                hass,
+#                config,
+#                "_humidity",
+#                "humidity",
+#                PERCENTAGE,
+#                SensorDeviceClass.HUMIDITY,
+#                SensorStateClass.MEASUREMENT,
+#                None,
+#                True,
+#                "mdi:water-percent",
+#            ),
             VentoSensor(
                 hass,
                 config,
@@ -61,7 +61,7 @@ async def async_setup_entry(
                 None,
                 SensorStateClass.MEASUREMENT,
                 EntityCategory.DIAGNOSTIC,
-                False,
+                True,
                 "mdi:fan-speed-2",
             ),
             VentoSensor(
@@ -84,7 +84,7 @@ async def async_setup_entry(
                 SensorDeviceClass.DURATION,
                 SensorStateClass.MEASUREMENT,
                 EntityCategory.DIAGNOSTIC,
-                False,
+                True,
             ),
             VentoSensor(
                 hass,
@@ -95,7 +95,7 @@ async def async_setup_entry(
                 SensorDeviceClass.BATTERY,
                 SensorStateClass.MEASUREMENT,
                 EntityCategory.DIAGNOSTIC,
-                True,
+                False,
                 "mdi:battery",
             ),
             VentoSensor(
@@ -110,18 +110,18 @@ async def async_setup_entry(
                 True,
                 "mdi:timer-sand",
             ),
-            VentoSensor(
-                hass,
-                config,
-                "_analogv",
-                "analogv",
-                None,
-                None,
-                None,
-                EntityCategory.DIAGNOSTIC,
-                False,
-                "mdi:flash",
-            ),
+#            VentoSensor(
+#                hass,
+#                config,
+#                "_analogv",
+#                "analogv",
+#                None,
+#                None,
+#                None,
+#                EntityCategory.DIAGNOSTIC,
+#                False,
+#                "mdi:flash",
+#            ),
             VentoSensor(
                 hass,
                 config,
@@ -131,7 +131,7 @@ async def async_setup_entry(
                 SensorDeviceClass.DURATION,
                 SensorStateClass.MEASUREMENT,
                 EntityCategory.DIAGNOSTIC,
-                False,
+                True,
                 "mdi:timer-outline",
             ),
             VentoSensor(
@@ -196,9 +196,9 @@ class VentoSensor(CoordinatorEntity, SensorEntity):
         val = self._fan.get_param(self._method)
         return val
 
-    def humidity(self):
-        """Get humidity sensor value."""
-        return self._fan.humidity
+#    def humidity(self):
+#        """Get humidity sensor value."""
+#        return self._fan.humidity
 
     def fan1_speed(self):
         """Get fan1 speed value."""
@@ -272,9 +272,9 @@ class VentoSensor(CoordinatorEntity, SensorEntity):
         return None  # In case the string format is unexpected
 
 
-    def analogv(self):
-        """Get analog Voltage value."""
-        return self._fan.analogV
+ #   def analogv(self):
+ #       """Get analog Voltage value."""
+ #       return self._fan.analogV
 
     def current_wifi_ip(self):
         """Get current wifi IP value."""
