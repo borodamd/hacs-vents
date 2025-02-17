@@ -26,8 +26,8 @@ async def async_setup_entry(
             VentoSwitch(
                 hass,
                 config,
-                "_humidity_sensor_state",
-                "humidity_sensor_state",
+                "_heater_status",
+                "heater_status",
                 SwitchDeviceClass.SWITCH,
                 False,
                 EntityCategory.CONFIG,

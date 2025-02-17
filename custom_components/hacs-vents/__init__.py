@@ -1,4 +1,4 @@
-"""The EcoVent_v2 integration."""
+"""The Vents Breezy integration."""
 # from __future__ import annotations
 import logging
 
@@ -23,7 +23,7 @@ PLATFORMS: list[Platform] = [
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up EcoVent_v2 from a config entry."""
+    """Set up Vents_Breezy from a config entry."""
 
     coordinator = VentoFanDataUpdateCoordinator(
         hass,

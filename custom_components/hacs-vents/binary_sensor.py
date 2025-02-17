@@ -30,13 +30,7 @@ async def async_setup_entry(
     """Set up the entities."""
     async_add_entities(
         [
-            VentoBinarySensor(
-                hass, config, "_boost_status", "boost_status", True, None
-            ),
             VentoBinarySensor(hass, config, "_timer_mode", "timer_mode", True, None),
-            VentoBinarySensor(
-                hass, config, "_relay_status", "relay_status", False, None
-            ),
             VentoBinarySensor(
                 hass,
                 config,
@@ -58,12 +52,6 @@ async def async_setup_entry(
                 "cloud_server_state",
                 True,
                 None,
-            ),
-            VentoBinarySensor(
-                hass, config, "_humidity_status", "humidity_status", False, None
-            ),
-            VentoBinarySensor(
-                hass, config, "_analogV_status", "analogV_status", False, None
             ),
         ]
     )
@@ -109,25 +97,13 @@ class VentoBinarySensor(CoordinatorEntity, BinarySensorEntity):
         """No polling needed for a demo binary sensor."""
         return True
 
-    def boost_status(self) -> bool:
-        """Boost status."""
-        return self._fan.boost_status
-
     def timer_mode(self) -> bool:
         """Timer mode status."""
         return self._fan.timer_mode
 
-    def relay_sensor_state(self) -> bool:
-        """Relay sensoir state."""
-        return self._fan.relay_sensor_state
-
     def filter_replacement_status(self) -> bool:
         """Filter replacement state state."""
         return self._fan.filter_replacement_status
-
-    def relay_status(self) -> bool:
-        """Relay status."""
-        return self._fan.relay_status
 
     def heater_status(self) -> bool:
         """Heater status."""
@@ -141,10 +117,3 @@ class VentoBinarySensor(CoordinatorEntity, BinarySensorEntity):
         """Cloud server state."""
         return self._fan.cloud_server_state
 
-    def humidity_status(self) -> bool:
-        """Humidity status."""
-        return self._fan.humidity_status
-
-    def analogV_status(self) -> bool:
-        """AnalogV status."""
-        return self._fan.analogV_status
