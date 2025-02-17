@@ -35,30 +35,6 @@ async def async_setup_entry(
                 "mdi:switch",
                 False,
             ),
-            VentoSwitch(
-                hass,
-                config,
-                "_relay_sensor_state",
-                "relay_sensor_state",
-                SwitchDeviceClass.SWITCH,
-                False,
-                EntityCategory.CONFIG,
-                True,
-                "mdi:switch",
-                False,
-            ),
-            VentoSwitch(
-                hass,
-                config,
-                "_analogV_sensor_state",
-                "analogV_sensor_state",
-                SwitchDeviceClass.SWITCH,
-                False,
-                EntityCategory.CONFIG,
-                True,
-                "mdi:switch",
-                False,
-            ),
         ]
     )
 
@@ -111,17 +87,10 @@ class VentoSwitch(CoordinatorEntity, SwitchEntity):
         self._fan.set_param(self._func, "off")
         self.schedule_update_ha_state()
 
-    def humidity_sensor_state(self):
-        """Humidity sensor state."""
-        return self._fan.humidity_sensor_state
 
-    def relay_sensor_state(self):
-        """Relay sensor state."""
-        return self._fan.relay_sensor_state
-
-    def analogV_sensor_state(self):
-        """Analog Voltage sensor state."""
-        return self._fan.analogV_sensor_state
+    def heater_status(self):
+        """Heater State."""
+        return self._fan.heater_status
 
     @property
     def is_on(self) -> bool | None:

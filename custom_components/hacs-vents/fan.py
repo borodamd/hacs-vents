@@ -35,7 +35,7 @@ FULL_SUPPORT = (
 
 
 PRESET_MODES = ["low", "medium", "high", "manual"]
-DIRECTIONS = ["ventilation", "air_supply", "heat_recovery"]
+DIRECTIONS = ["off", "heat_recovery" "air_supply", "exhaust"]
 
 
 async def async_setup_entry(
@@ -195,8 +195,8 @@ class VentoExpertFan(CoordinatorEntity, FanEntity):
 
     async def async_set_direction(self, direction: str) -> None:
         """Set the direction of the fan."""
-        if direction == "forward" and self._fan.airflow != "ventilation":
-            self._fan.set_param("airflow", "ventilation")
+        if direction == "forward" and self._fan.airflow != "exhaust":
+            self._fan.set_param("airflow", "exhaust")
         if direction == "reverse" and self._fan.airflow != "air_supply":
             self._fan.set_param("airflow", "air_supply")
         await self.coordinator.async_refresh()
@@ -207,7 +207,7 @@ class VentoExpertFan(CoordinatorEntity, FanEntity):
         if oscillating:
             self._fan.set_param("airflow", "heat_recovery")
         else:
-            self._fan.set_param("airflow", "ventilation")
+            self._fan.set_param("airflow", "exhaust")
         await self.coordinator.async_refresh()
         # self.schedule_update_ha_state()
 
