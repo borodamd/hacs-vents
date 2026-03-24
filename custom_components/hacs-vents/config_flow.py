@@ -145,7 +145,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data=user_input,
                     title=info["title"],
                 )
-                await self.hass.config_entries.async_reload(entry.entry_id)
+                self.hass.async_create_task(
+                    self.hass.config_entries.async_reload(entry.entry_id)
+                )
                 return self.async_abort(reason="reauth_successful")
             except CannotConnect:
                 errors["base"] = "cannot_connect"
