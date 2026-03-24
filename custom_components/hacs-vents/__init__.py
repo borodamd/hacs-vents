@@ -21,19 +21,18 @@ PLATFORMS: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Vents_Breezy from a config entry."""
-    # Проверяем, не нужно ли обновить существующий координатор
-    if DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]:
-        # Обновляем существующий координатор
-        coordinator = hass.data[DOMAIN][entry.entry_id]
-        await coordinator.async_update_config(entry)
-    else:
-        # Создаём новый координатор
-        coordinator = VentoFanDataUpdateCoordinator(hass, entry)
-        hass.data.setdefault(DOMAIN, {})
-        hass.data[DOMAIN][entry.entry_id] = coordinator
+    _LOGGER.debug("Setting up entry: %s", entry.entry_id)
+    
+    # Создаём координатор (всегда новый при настройке)
+    coordinator = VentoFanDataUpdateCoordinator(hass, entry)
+    
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    # Первое обновление данных
     await coordinator.async_config_entry_first_refresh()
 
+    # Настраиваем платформы
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
@@ -41,6 +40,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+    _LOGGER.debug("Unloading entry: %s", entry.entry_id)
+    
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
