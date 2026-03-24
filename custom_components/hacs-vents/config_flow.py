@@ -44,6 +44,19 @@ class VentoHub:
         self.fan = None
         self.name = name
 
+    @staticmethod
+    async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+        """Migrate old entry."""
+        _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+        if config_entry.version == 1:
+            # Версия 1 -> Версия 2: никаких изменений в структуре данных не требуется
+            # Просто обновляем версию
+            hass.config_entries.async_update_entry(config_entry, version=2)
+            _LOGGER.debug("Migration to version 2 successful")
+
+        return True    
+    
     async def authenticate(self, password: str) -> bool:
         """Authenticate."""
         self.fan = Fan(self.host, password, self.fan_id, self.name, self.port)
