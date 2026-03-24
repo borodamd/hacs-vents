@@ -1,4 +1,4 @@
-"""Config flow for EcoVent_v2 integration."""
+"""Config flow for Vents Breezy integration."""
 from __future__ import annotations
 
 import logging
@@ -22,7 +22,6 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-# adjust the data schema to the data that you need
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_IP_ADDRESS, default="<broadcast>"): str,
@@ -55,17 +54,7 @@ class VentoHub:
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect.
-
-    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
-    """
-
-    # If your PyPI package is not built with async, pass your methods
-    # to the executor:
-    # await hass.async_add_executor_job(
-    #     your_validate_func, data["username"], data["password"]
-    # )
-
+    """Validate the user input allows us to connect."""
     hub = VentoHub(
         data[CONF_IP_ADDRESS], data[CONF_PORT], data[CONF_DEVICE_ID], data[CONF_NAME]
     )
@@ -73,25 +62,20 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     if not await hub.authenticate(data[CONF_PASSWORD]):
         raise InvalidAuth
 
-    # If you cannot connect:
-    # throw CannotConnect
-    # If the authentication is wrong:
-    # InvalidAuth
-
-    # Return info that you want to store in the config entry.
     return {"title": hub.name, "id": hub.fan_id}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for EcoVent_v2."""
+    """Handle a config flow for Vents Breezy."""
 
-    VERSION = 1
+    VERSION = 2  # Увеличиваем версию, так как добавляем новые возможности
 
     def __init__(self):
-        """Initialite ConfigFlow."""
+        """Initialize ConfigFlow."""
         self._fan = Fan(
             "<broadcast>", "1111", "DEFAULT_DEVICEID", "Vento Express", 4000
         )
+        self._reauth_entry_id = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -108,7 +92,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if user_input[CONF_IP_ADDRESS] == "<broadcast>":
                 ip = None
                 ips = self._fan.search_devices("0.0.0.0")
-                # ips = ["10.94.0.105", "10.94.0.106", "10.94.0.107", "10.94.0.108"]
                 unique_ids = []
                 for entry in self._async_current_entries(include_ignore=True):
                     unique_ids.append(entry.unique_id)
@@ -140,6 +123,82 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
+        )
+
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
+        """Handle reauthorization (called when integration needs new credentials)."""
+        self._reauth_entry_id = self.context.get("entry_id")
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Dialog that informs the user that reauth is required."""
+        errors = {}
+        entry = self.hass.config_entries.async_get_entry(self._reauth_entry_id)
+        
+        if user_input is not None:
+            try:
+                info = await validate_input(self.hass, user_input)
+                self.hass.config_entries.async_update_entry(
+                    entry,
+                    data=user_input,
+                    title=info["title"],
+                )
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reauth_successful")
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception during reauth")
+                errors["base"] = "unknown"
+        
+        current_data = entry.data if entry else {}
+        schema = self.add_suggested_values_to_schema(
+            STEP_USER_DATA_SCHEMA, current_data
+        )
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={"name": entry.title if entry else "device"},
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle reconfiguration of the integration."""
+        errors = {}
+        entry = self.hass.config_entries.async_get_entry(self.context.get("entry_id"))
+        
+        if user_input is not None:
+            try:
+                info = await validate_input(self.hass, user_input)
+                self.hass.config_entries.async_update_entry(
+                    entry,
+                    data=user_input,
+                    title=info["title"],
+                )
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reconfigure_successful")
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception during reconfigure")
+                errors["base"] = "unknown"
+        
+        current_data = entry.data if entry else {}
+        schema = self.add_suggested_values_to_schema(
+            STEP_USER_DATA_SCHEMA, current_data
+        )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=schema,
+            errors=errors,
         )
 
 
