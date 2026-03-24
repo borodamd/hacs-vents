@@ -15,7 +15,6 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
     DataUpdateCoordinator,
     UpdateFailed,
 )
@@ -47,25 +46,35 @@ class VentoFanDataUpdateCoordinator(DataUpdateCoordinator):
 
     def _init_fan(self) -> None:
         """Initialize or reinitialize the fan connection."""
-        self._fan = Fan(
-            self.config.data[CONF_IP_ADDRESS],
-            self.config.data[CONF_PASSWORD],
-            self.config.data[CONF_DEVICE_ID],
-            self.config.data[CONF_NAME],
-            self.config.data[CONF_PORT],
-        )
-        self._fan.init_device()
+        try:
+            self._fan = Fan(
+                self.config.data[CONF_IP_ADDRESS],
+                self.config.data[CONF_PASSWORD],
+                self.config.data[CONF_DEVICE_ID],
+                self.config.data[CONF_NAME],
+                self.config.data[CONF_PORT],
+            )
+            # init_device может быть синхронным и блокирующим
+            self._fan.init_device()
+            _LOGGER.debug("Fan initialized with IP: %s", self.config.data[CONF_IP_ADDRESS])
+        except Exception as err:
+            _LOGGER.error("Failed to initialize fan: %s", err)
+            raise
 
     async def async_update_config(self, config: ConfigEntry) -> None:
         """Update the coordinator with a new config entry."""
+        _LOGGER.debug("Updating coordinator config for entry: %s", config.entry_id)
         self.config = config
-        self._init_fan()
+        # Пересоздаём подключение в executor, чтобы не блокировать event loop
+        await self.hass.async_add_executor_job(self._init_fan)
         await self.async_refresh()
 
     async def _async_update_data(self) -> None:
         """Fetch data from API endpoint."""
         try:
-            # Выполняем обновление в executor, так как это может быть блокирующая операция
-            return await self.hass.async_add_executor_job(self._fan.update)
+            # Выполняем обновление в executor, так как это блокирующая операция
+            await self.hass.async_add_executor_job(self._fan.update)
+            _LOGGER.debug("Fan data updated successfully")
         except Exception as err:
+            _LOGGER.error("Error updating fan data: %s", err)
             raise UpdateFailed(f"Error communicating with device: {err}") from err
