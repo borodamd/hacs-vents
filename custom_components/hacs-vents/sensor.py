@@ -245,7 +245,7 @@ class VentoSensor(CoordinatorEntity, SensorEntity):
         return self._fan.curent_wifi_ip
 
 
-# VentoDurationSensor class for duration sensors with human-readable format
+# VentoDurationSensor class for duration sensors with numeric value + formatted attribute
 class VentoDurationSensor(CoordinatorEntity, SensorEntity):
     """Class for Vento Fan Duration Sensors (filter change, machine hours)."""
 
@@ -270,21 +270,33 @@ class VentoDurationSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = self._fan.id + name_suffix
         self._attr_entity_registry_enabled_default = enable_by_default
         self._attr_icon = icon
-        self._attr_native_unit_of_measurement = None  # Без единиц, возвращаем строку
+        self._attr_native_unit_of_measurement = "h"
+        self._attr_state_class = SensorStateClass.MEASUREMENT
         self._method_name = method_name
+        self._attr_extra_state_attributes = {}
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._fan.id)},
             name=self._fan.name,
         )
 
     @property
-    def native_value(self) -> str:
-        """Get formatted duration string."""
+    def native_value(self) -> float | None:
+        """Get numeric duration in hours."""
+        method = getattr(self, self._method_name, None)
+        if method:
+            return method()
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes."""
         method = getattr(self, self._method_name, None)
         if method:
             total_hours = method()
-            return format_duration_hours(total_hours)
-        return None
+            if total_hours is not None:
+                formatted = format_duration_hours(total_hours)
+                return {"formatted": formatted}
+        return {}
 
     def filter_timer_countdown(self):
         """Get filter time countdown as total hours."""
@@ -297,7 +309,7 @@ class VentoDurationSensor(CoordinatorEntity, SensorEntity):
             minutes = int(match.group(3))
 
             total_hours = days * 24 + hours + minutes / 60
-            return total_hours
+            return round(total_hours, 1)
         return None
 
     def machine_hours(self):
@@ -311,5 +323,5 @@ class VentoDurationSensor(CoordinatorEntity, SensorEntity):
             minutes = int(match.group(3))
 
             total_hours = days * 24 + hours + minutes / 60
-            return total_hours
+            return round(total_hours, 1)
         return None
