@@ -20,6 +20,42 @@ from .coordinator import VentoFanDataUpdateCoordinator
 
 import re
 
+
+def format_duration_hours(total_hours: float) -> str:
+    """Format total hours into years, months, days, hours, minutes."""
+    if total_hours is None or total_hours == 0:
+        return "0 minutes"
+    
+    total_minutes = int(total_hours * 60)
+    
+    # Разбиваем на компоненты
+    years = total_minutes // (365 * 24 * 60)
+    total_minutes %= (365 * 24 * 60)
+    
+    months = total_minutes // (30 * 24 * 60)  # Приблизительно
+    total_minutes %= (30 * 24 * 60)
+    
+    days = total_minutes // (24 * 60)
+    total_minutes %= (24 * 60)
+    
+    hours = total_minutes // 60
+    minutes = total_minutes % 60
+    
+    parts = []
+    if years > 0:
+        parts.append(f"{years} year{'s' if years > 1 else ''}")
+    if months > 0:
+        parts.append(f"{months} month{'s' if months > 1 else ''}")
+    if days > 0:
+        parts.append(f"{days} day{'s' if days > 1 else ''}")
+    if hours > 0:
+        parts.append(f"{hours} hour{'s' if hours > 1 else ''}")
+    if minutes > 0:
+        parts.append(f"{minutes} minute{'s' if minutes > 1 else ''}")
+    
+    return ", ".join(parts) if parts else "0 minutes"
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config: ConfigEntry,
@@ -28,18 +64,6 @@ async def async_setup_entry(
     """Set up Vento Sensors."""
     async_add_entities(
         [
-#            VentoSensor(
-#                hass,
-#                config,
-#                "_humidity",
-#                "humidity",
-#                PERCENTAGE,
-#                SensorDeviceClass.HUMIDITY,
-#                SensorStateClass.MEASUREMENT,
-#                None,
-#                True,
-#                "mdi:water-percent",
-#            ),
             VentoSensor(
                 hass,
                 config,
@@ -74,6 +98,7 @@ async def async_setup_entry(
                 None,
                 None,
                 True,
+                "mdi:air-filter",
             ),
             VentoSensor(
                 hass,
@@ -85,6 +110,7 @@ async def async_setup_entry(
                 SensorStateClass.MEASUREMENT,
                 EntityCategory.DIAGNOSTIC,
                 True,
+                "mdi:timer-outline",
             ),
             VentoSensor(
                 hass,
@@ -98,38 +124,22 @@ async def async_setup_entry(
                 False,
                 "mdi:battery",
             ),
-            VentoSensor(
+            VentoDurationSensor(
                 hass,
                 config,
                 "_filter_change_in",
                 "filter_timer_countdown",
-                "h",
                 SensorDeviceClass.DURATION,
-                SensorStateClass.MEASUREMENT,
                 EntityCategory.DIAGNOSTIC,
                 True,
                 "mdi:timer-sand",
             ),
-#            VentoSensor(
-#                hass,
-#                config,
-#                "_analogv",
-#                "analogv",
-#                None,
-#                None,
-#                None,
-#                EntityCategory.DIAGNOSTIC,
-#                False,
-#                "mdi:flash",
-#            ),
-            VentoSensor(
+            VentoDurationSensor(
                 hass,
                 config,
                 "_machine_hours",
                 "machine_hours",
-                "h",
                 SensorDeviceClass.DURATION,
-                SensorStateClass.MEASUREMENT,
                 EntityCategory.DIAGNOSTIC,
                 True,
                 "mdi:timer-outline",
@@ -150,7 +160,7 @@ async def async_setup_entry(
     )
 
 
-# VentoSensor class
+# VentoSensor class for numeric/string sensors
 class VentoSensor(CoordinatorEntity, SensorEntity):
     """Class for Vento Fan Sensors."""
 
@@ -158,8 +168,8 @@ class VentoSensor(CoordinatorEntity, SensorEntity):
         self,
         hass: HomeAssistant,
         config: ConfigEntry,
-        name="VentoSensor",
-        method=None,
+        name_suffix: str,
+        method_name: str,
         native_unit_of_measurement=None,
         device_class=None,
         state_class=None,
@@ -175,10 +185,10 @@ class VentoSensor(CoordinatorEntity, SensorEntity):
         self._attr_device_class = device_class
         self._attr_state_class = state_class
         self._attr_entity_category = entity_category
-        self._attr_name = self._fan.name + name
-        self._attr_unique_id = self._fan.id + name
+        self._attr_name = self._fan.name + name_suffix
+        self._attr_unique_id = self._fan.id + name_suffix
         self._attr_entity_registry_enabled_default = enable_by_default
-        self._method = getattr(self, method)
+        self._method_name = method_name
         self._attr_icon = icon
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._fan.id)},
@@ -188,17 +198,10 @@ class VentoSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self):
         """Get native value property from method."""
-        self._attr_native_value = self._method()
-        return self._attr_native_value
-
-    def get_native_value(self):
-        """Get native value method."""
-        val = self._fan.get_param(self._method)
-        return val
-
-#    def humidity(self):
-#        """Get humidity sensor value."""
-#        return self._fan.humidity
+        method = getattr(self, self._method_name, None)
+        if method:
+            return method()
+        return None
 
     def fan1_speed(self):
         """Get fan1 speed value."""
@@ -227,55 +230,86 @@ class VentoSensor(CoordinatorEntity, SensorEntity):
         """Get timer counter value as total hours."""
         timer_counter_str = self._fan.timer_counter
 
-        # Use regex to extract days, hours, and minutes
         match = re.match(r"(\d+)h (\d+)m (\d+)s", timer_counter_str)
         if match:
             hours = int(match.group(1))
             minutes = int(match.group(2))
             seconds = int(match.group(3))
 
-            # Convert everything to total hours
             total_hours = hours + minutes / 60 + seconds / 3600
-            return total_hours
-        return None  # In case the string format is unexpected
+            return round(total_hours, 1)
+        return None
+
+    def current_wifi_ip(self):
+        """Get current wifi IP value."""
+        return self._fan.curent_wifi_ip
+
+
+# VentoDurationSensor class for duration sensors with human-readable format
+class VentoDurationSensor(CoordinatorEntity, SensorEntity):
+    """Class for Vento Fan Duration Sensors (filter change, machine hours)."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        config: ConfigEntry,
+        name_suffix: str,
+        method_name: str,
+        device_class=None,
+        entity_category=None,
+        enable_by_default=True,
+        icon=None,
+    ) -> None:
+        """Initialize duration sensors."""
+        coordinator: VentoFanDataUpdateCoordinator = hass.data[DOMAIN][config.entry_id]
+        super().__init__(coordinator)
+        self._fan: Fan = coordinator._fan
+        self._attr_device_class = device_class
+        self._attr_entity_category = entity_category
+        self._attr_name = self._fan.name + name_suffix
+        self._attr_unique_id = self._fan.id + name_suffix
+        self._attr_entity_registry_enabled_default = enable_by_default
+        self._attr_icon = icon
+        self._attr_native_unit_of_measurement = None  # Без единиц, возвращаем строку
+        self._method_name = method_name
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._fan.id)},
+            name=self._fan.name,
+        )
+
+    @property
+    def native_value(self) -> str:
+        """Get formatted duration string."""
+        method = getattr(self, self._method_name, None)
+        if method:
+            total_hours = method()
+            return format_duration_hours(total_hours)
+        return None
 
     def filter_timer_countdown(self):
         """Get filter time countdown as total hours."""
         remaining_time_str = self._fan.filter_timer_countdown
 
-        # Use regex to extract days, hours, and minutes
         match = re.match(r"(\d+)d (\d+)h (\d+)m", remaining_time_str)
         if match:
             days = int(match.group(1))
             hours = int(match.group(2))
             minutes = int(match.group(3))
 
-            # Convert everything to total hours
             total_hours = days * 24 + hours + minutes / 60
             return total_hours
-        return None  # In case the string format is unexpected
+        return None
 
     def machine_hours(self):
         """Get machine hours value as total hours."""
         machine_hours_str = self._fan.machine_hours
 
-        # Use regex to extract days, hours, and minutes
         match = re.match(r"(\d+)d (\d+)h (\d+)m", machine_hours_str)
         if match:
             days = int(match.group(1))
             hours = int(match.group(2))
             minutes = int(match.group(3))
 
-            # Convert everything to total hours
             total_hours = days * 24 + hours + minutes / 60
             return total_hours
-        return None  # In case the string format is unexpected
-
-
- #   def analogv(self):
- #       """Get analog Voltage value."""
- #       return self._fan.analogV
-
-    def current_wifi_ip(self):
-        """Get current wifi IP value."""
-        return self._fan.curent_wifi_ip
+        return None
