@@ -1,3 +1,4 @@
+binary_sensor.py:
 """Vento fan binary sensors."""
 
 from __future__ import annotations
