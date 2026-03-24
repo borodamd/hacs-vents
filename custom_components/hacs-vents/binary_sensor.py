@@ -117,8 +117,4 @@ class VentoBinarySensor(CoordinatorEntity, BinarySensorEntity):
             return None
         
         # Методы возвращают boolean
-        result = method
-        # Для alarm_status и filter_replacement_status обычно True = проблема
-        if self._attr_device_class == BinarySensorDeviceClass.PROBLEM:
-            return bool(result)
-        return bool(result)
+        return bool(method)
