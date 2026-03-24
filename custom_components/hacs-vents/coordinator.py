@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 import logging
+from typing import Any
 
 from vents_breezy import Fan
 
@@ -35,6 +36,7 @@ class VentoFanDataUpdateCoordinator(DataUpdateCoordinator):
         """Initialize global Vento data updater."""
         self.config = config
         self._fan = None
+        self._data = {}
         self._init_fan()
 
         super().__init__(
@@ -54,9 +56,12 @@ class VentoFanDataUpdateCoordinator(DataUpdateCoordinator):
                 self.config.data[CONF_NAME],
                 self.config.data[CONF_PORT],
             )
-            # init_device может быть синхронным и блокирующим
             self._fan.init_device()
-            _LOGGER.debug("Fan initialized with IP: %s", self.config.data[CONF_IP_ADDRESS])
+            _LOGGER.debug(
+                "Fan initialized with IP: %s, ID: %s",
+                self.config.data[CONF_IP_ADDRESS],
+                self._fan.id
+            )
         except Exception as err:
             _LOGGER.error("Failed to initialize fan: %s", err)
             raise
@@ -65,16 +70,34 @@ class VentoFanDataUpdateCoordinator(DataUpdateCoordinator):
         """Update the coordinator with a new config entry."""
         _LOGGER.debug("Updating coordinator config for entry: %s", config.entry_id)
         self.config = config
-        # Пересоздаём подключение в executor, чтобы не блокировать event loop
-        await self.hass.async_add_executor_job(self._init_fan)
-        await self.async_refresh()
+        
+        # Пересоздаём подключение
+        try:
+            await self.hass.async_add_executor_job(self._init_fan)
+            await self.async_refresh()
+            _LOGGER.debug("Coordinator updated successfully")
+        except Exception as err:
+            _LOGGER.error("Failed to update coordinator: %s", err)
 
-    async def _async_update_data(self) -> None:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint."""
         try:
-            # Выполняем обновление в executor, так как это блокирующая операция
-            await self.hass.async_add_executor_job(self._fan.update)
-            _LOGGER.debug("Fan data updated successfully")
+            # Выполняем обновление в executor
+            result = await self.hass.async_add_executor_job(self._fan.update)
+            
+            # Если update возвращает словарь с данными, сохраняем его
+            if result is not None:
+                self._data = result
+                _LOGGER.debug("Fan data updated successfully: %s", result)
+            else:
+                _LOGGER.debug("Fan update completed, no data returned")
+                
+            return self._data
+            
         except Exception as err:
             _LOGGER.error("Error updating fan data: %s", err)
             raise UpdateFailed(f"Error communicating with device: {err}") from err
+
+    def get_data(self) -> dict[str, Any]:
+        """Get the latest data."""
+        return self._data
