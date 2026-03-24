@@ -68,14 +68,15 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Vents Breezy."""
 
-    VERSION = 2  # Увеличиваем версию, так как добавляем новые возможности
+    VERSION = 2
 
     def __init__(self):
         """Initialize ConfigFlow."""
         self._fan = Fan(
             "<broadcast>", "1111", "DEFAULT_DEVICEID", "Vento Express", 4000
         )
-        self._reauth_entry_id = None
+        # Используем context для хранения, вместо прямого присвоения
+        self._reauth_entry_id = None  # Это поле будет установлено через context
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -127,7 +128,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
         """Handle reauthorization (called when integration needs new credentials)."""
-        self._reauth_entry_id = self.context.get("entry_id")
+        # Сохраняем entry_id в context для использования в следующем шаге
+        self.context["reauth_entry_id"] = self.context.get("entry_id")
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -135,7 +137,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Dialog that informs the user that reauth is required."""
         errors = {}
-        entry = self.hass.config_entries.async_get_entry(self._reauth_entry_id)
+        entry_id = self.context.get("reauth_entry_id")
+        if not entry_id:
+            entry_id = self.context.get("entry_id")
+        
+        entry = self.hass.config_entries.async_get_entry(entry_id)
         
         if user_input is not None:
             try:
@@ -145,6 +151,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data=user_input,
                     title=info["title"],
                 )
+                # Перезагружаем интеграцию
                 self.hass.async_create_task(
                     self.hass.config_entries.async_reload(entry.entry_id)
                 )
@@ -173,7 +180,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Handle reconfiguration of the integration."""
         errors = {}
-        entry = self.hass.config_entries.async_get_entry(self.context.get("entry_id"))
+        entry_id = self.context.get("entry_id")
+        entry = self.hass.config_entries.async_get_entry(entry_id)
         
         if user_input is not None:
             try:
@@ -183,7 +191,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data=user_input,
                     title=info["title"],
                 )
-                await self.hass.config_entries.async_reload(entry.entry_id)
+                # Перезагружаем интеграцию
+                self.hass.async_create_task(
+                    self.hass.config_entries.async_reload(entry.entry_id)
+                )
                 return self.async_abort(reason="reconfigure_successful")
             except CannotConnect:
                 errors["base"] = "cannot_connect"
