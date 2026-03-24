@@ -1,6 +1,5 @@
 """VentoUpdateCoordinator class."""
 
-# from __future__ import annotations
 from datetime import timedelta
 import logging
 
@@ -35,27 +34,38 @@ class VentoFanDataUpdateCoordinator(DataUpdateCoordinator):
         config: ConfigEntry,
     ) -> None:
         """Initialize global Vento data updater."""
-        self._fan = Fan(
-            config.data[CONF_IP_ADDRESS],
-            config.data[CONF_PASSWORD],
-            config.data[CONF_DEVICE_ID],
-            config.data[CONF_NAME],
-            config.data[CONF_PORT],
-        )
-        self._fan.init_device()
+        self.config = config
+        self._fan = None
+        self._init_fan()
 
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
             update_interval=timedelta(seconds=60),
-            update_method=self._fan.update(),
         )
 
-    async def _async_update_data(self) -> None:
-        """Fetch data from API endpoint.
+    def _init_fan(self) -> None:
+        """Initialize or reinitialize the fan connection."""
+        self._fan = Fan(
+            self.config.data[CONF_IP_ADDRESS],
+            self.config.data[CONF_PASSWORD],
+            self.config.data[CONF_DEVICE_ID],
+            self.config.data[CONF_NAME],
+            self.config.data[CONF_PORT],
+        )
+        self._fan.init_device()
 
-        This is the place to pre-process the data to lookup tables
-        so entities can quickly look up their data.
-        """
-        self._fan.update()
+    async def async_update_config(self, config: ConfigEntry) -> None:
+        """Update the coordinator with a new config entry."""
+        self.config = config
+        self._init_fan()
+        await self.async_refresh()
+
+    async def _async_update_data(self) -> None:
+        """Fetch data from API endpoint."""
+        try:
+            # Выполняем обновление в executor, так как это может быть блокирующая операция
+            return await self.hass.async_add_executor_job(self._fan.update)
+        except Exception as err:
+            raise UpdateFailed(f"Error communicating with device: {err}") from err
