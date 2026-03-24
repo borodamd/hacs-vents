@@ -8,5 +8,5 @@
   "iot_class": "local_polling",
   "loggers": ["Vents-Breezy"],
   "requirements": ["vents-breezy==0.0.3"],
-  "icon": "icon.png"
+  "icon": "mdi:fan-auto"
 }
