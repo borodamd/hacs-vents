@@ -44,19 +44,6 @@ class VentoHub:
         self.fan = None
         self.name = name
 
-    @staticmethod
-    async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
-        """Migrate old entry."""
-        _LOGGER.debug("Migrating from version %s", config_entry.version)
-
-        if config_entry.version == 1:
-            # Версия 1 -> Версия 2: никаких изменений в структуре данных не требуется
-            # Просто обновляем версию
-            hass.config_entries.async_update_entry(config_entry, version=2)
-            _LOGGER.debug("Migration to version 2 successful")
-
-        return True    
-    
     async def authenticate(self, password: str) -> bool:
         """Authenticate."""
         self.fan = Fan(self.host, password, self.fan_id, self.name, self.port)
@@ -88,7 +75,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._fan = Fan(
             "<broadcast>", "1111", "DEFAULT_DEVICEID", "Vento Express", 4000
         )
-        # НЕ создаём self._reauth_entry_id - убираем эту строку
+
+    @staticmethod
+    async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+        """Migrate old entry."""
+        _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+        if config_entry.version == 1:
+            # Версия 1 -> Версия 2: структура данных не изменилась
+            hass.config_entries.async_update_entry(config_entry, version=2)
+            _LOGGER.debug("Migration to version 2 successful")
+
+        return True
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -140,7 +138,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
         """Handle reauthorization (called when integration needs new credentials)."""
-        # entry_id уже есть в context, просто переходим к следующему шагу
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -148,7 +145,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Dialog that informs the user that reauth is required."""
         errors = {}
-        # Получаем entry_id из context (устанавливается автоматически при вызове reauth)
         entry_id = self.context.get("entry_id")
         
         if not entry_id:
@@ -169,7 +165,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data=user_input,
                     title=info["title"],
                 )
-                # Перезагружаем интеграцию
                 self.hass.async_create_task(
                     self.hass.config_entries.async_reload(entry.entry_id)
                 )
@@ -218,7 +213,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data=user_input,
                     title=info["title"],
                 )
-                # Перезагружаем интеграцию
                 self.hass.async_create_task(
                     self.hass.config_entries.async_reload(entry.entry_id)
                 )
