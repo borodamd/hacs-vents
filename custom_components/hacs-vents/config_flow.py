@@ -75,8 +75,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._fan = Fan(
             "<broadcast>", "1111", "DEFAULT_DEVICEID", "Vento Express", 4000
         )
-        # Используем context для хранения, вместо прямого присвоения
-        self._reauth_entry_id = None  # Это поле будет установлено через context
+        # НЕ создаём self._reauth_entry_id - убираем эту строку
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -128,8 +127,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
         """Handle reauthorization (called when integration needs new credentials)."""
-        # Сохраняем entry_id в context для использования в следующем шаге
-        self.context["reauth_entry_id"] = self.context.get("entry_id")
+        # entry_id уже есть в context, просто переходим к следующему шагу
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -137,11 +135,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Dialog that informs the user that reauth is required."""
         errors = {}
-        entry_id = self.context.get("reauth_entry_id")
+        # Получаем entry_id из context (устанавливается автоматически при вызове reauth)
+        entry_id = self.context.get("entry_id")
+        
         if not entry_id:
-            entry_id = self.context.get("entry_id")
+            _LOGGER.error("No entry_id found in context during reauth")
+            return self.async_abort(reason="unknown")
         
         entry = self.hass.config_entries.async_get_entry(entry_id)
+        
+        if not entry:
+            _LOGGER.error("Entry %s not found during reauth", entry_id)
+            return self.async_abort(reason="unknown")
         
         if user_input is not None:
             try:
@@ -172,7 +177,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=schema,
             errors=errors,
-            description_placeholders={"name": entry.title if entry else "device"},
+            description_placeholders={"name": entry.title},
         )
 
     async def async_step_reconfigure(
@@ -181,7 +186,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle reconfiguration of the integration."""
         errors = {}
         entry_id = self.context.get("entry_id")
+        
+        if not entry_id:
+            _LOGGER.error("No entry_id found in context during reconfigure")
+            return self.async_abort(reason="unknown")
+        
         entry = self.hass.config_entries.async_get_entry(entry_id)
+        
+        if not entry:
+            _LOGGER.error("Entry %s not found during reconfigure", entry_id)
+            return self.async_abort(reason="unknown")
         
         if user_input is not None:
             try:
